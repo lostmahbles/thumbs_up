@@ -80,7 +80,7 @@ module ThumbsUp #:nodoc:
           self.clear_votes(voteable)
         end
         direction = (options[:direction].to_sym == :up)
-        Vote.create!(:vote => direction, :voteable => voteable, :voter => self)
+        Vote.create!(:vote => direction, :voteable_type => voteable.class.name, :voteable_id => voteable.id, :voter => self)
       end
 
       def clear_votes(voteable)
