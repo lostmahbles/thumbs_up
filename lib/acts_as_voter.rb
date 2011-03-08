@@ -54,7 +54,7 @@ module ThumbsUp #:nodoc:
               :voter_id => self.id,
               :voter_type => self.class.name,
               :voteable_id => voteable.id,
-              :voteable_type => voteable.base_class.name
+              :voteable_type => voteable.base_class
             ).count
       end
 
