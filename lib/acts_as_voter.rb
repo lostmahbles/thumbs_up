@@ -54,7 +54,7 @@ module ThumbsUp #:nodoc:
               :voter_id => self.id,
               :voter_type => self.class.name,
               :voteable_id => voteable.id,
-              :voteable_type => voteable.class.base_class
+              :voteable_type => voteable.class.name
             ).count
       end
 
@@ -80,7 +80,11 @@ module ThumbsUp #:nodoc:
           self.clear_votes(voteable)
         end
         direction = (options[:direction].to_sym == :up)
-        Vote.create!(:vote => direction, :voteable => voteable, :voter => self)
+        vote = Vote.new(:vote => direction, :voter => self)
+        vote.voteable_type = voteable.class.name
+        vote.voteable_id = voteable.to_param
+        vote.save
+        #Vote.create!(:vote => direction, :voteable => voteable, :voter => self)
       end
 
       def clear_votes(voteable)
@@ -88,7 +92,7 @@ module ThumbsUp #:nodoc:
           :voter_id => self.id,
           :voter_type => self.class.name,
           :voteable_id => voteable.id,
-          :voteable_type => voteable.class.base_class
+          :voteable_type => voteable.class.name
         ).map(&:destroy)
       end
 
@@ -99,7 +103,7 @@ module ThumbsUp #:nodoc:
               :voter_type => self.class.name,
               :vote => direction == :up ? true : false,
               :voteable_id => voteable.id,
-              :voteable_type => voteable.class.base_class
+              :voteable_type => voteable.class.name
             ).count
       end
 

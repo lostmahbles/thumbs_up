@@ -34,7 +34,7 @@ module ThumbsUp
         # Use the explicit SQL statement throughout for Postgresql compatibility.
         vote_count = "COUNT(#{Vote.table_name}.voteable_id)"
         
-        t = self.where("#{Vote.table_name}.voteable_type = '#{self.base_class}'")
+        t = self.where("#{Vote.table_name}.voteable_type = '#{self.class.name}'")
 
         # We join so that you can order by columns on the voteable model.
         t = t.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.#{self.primary_key} = #{Vote.table_name}.voteable_id")
@@ -69,11 +69,11 @@ module ThumbsUp
     module InstanceMethods
 
       def votes_for
-        Vote.where(:voteable_id => id, :voteable_type => self.class.base_class, :vote => true).count
+        Vote.where(:voteable_id => id, :voteable_type => self.class.name, :vote => true).count
       end
 
       def votes_against
-        Vote.where(:voteable_id => id, :voteable_type => self.class.base_class, :vote => false).count
+        Vote.where(:voteable_id => id, :voteable_type => self.class.name, :vote => false).count
       end
 
       # You'll probably want to use this method to display how 'good' a particular voteable
@@ -93,7 +93,7 @@ module ThumbsUp
       def voted_by?(voter)
         0 < Vote.where(
               :voteable_id => self.id,
-              :voteable_type => self.class.base_class,
+              :voteable_type => self.class.name,
               :voter_type => voter.class.name,
               :voter_id => voter.id
             ).count
