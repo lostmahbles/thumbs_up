@@ -30,43 +30,47 @@ module ThumbsUp
       #  :at_least    - Item must have at least X votes
       #  :at_most     - Item may not have more than X votes
       def rank_tally(*args)
-	options = args.extract_options!
+	      options = args.extract_options!
 	
-	tsub0 = Vote
-	tsub0 = tsub0.where("vote = ?", false)
-	tsub0 = tsub0.where("voteable_type = ?", self.name)
-	tsub0 = tsub0.group("voteable_id")
-	tsub0 = tsub0.select("DISTINCT voteable_id, COUNT(vote) as Votes_Against")
+      	tsub0 = Vote
+      	tsub0 = tsub0.where("vote = ?", false)
+      	tsub0 = tsub0.where("voteable_type = ?", self.class.name)
+      	tsub0 = tsub0.group("voteable_id")
+      	tsub0 = tsub0.select("DISTINCT voteable_id, COUNT(vote) as Votes_Against")
 	
-	tsub1 = Vote
-	tsub1 = tsub1.where("vote = ?", true)
-	tsub1 = tsub1.where("voteable_type = ?", self.name)
-	tsub1 = tsub1.group("voteable_id")
-	tsub1 = tsub1.select("DISTINCT voteable_id, COUNT(vote) as Votes_For")
+      	tsub1 = Vote
+      	tsub1 = tsub1.where("vote = ?", true)
+      	tsub1 = tsub1.where("voteable_type = ?", self.class.name)
+      	tsub1 = tsub1.group("voteable_id")
+      	tsub1 = tsub1.select("DISTINCT voteable_id, COUNT(vote) as Votes_For")
 	
-	t = self.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Vote.table_name}.*, 
-	  (COALESCE(vfor.Votes_For, 0)-COALESCE(against.Votes_Against, 0)) AS Vote_Total
-	    FROM (#{Vote.table_name} LEFT JOIN
-	      (#{tsub0.to_sql}) AS against ON #{Vote.table_name}.voteable_id = against.voteable_id)
-	    LEFT JOIN 
-	      (#{tsub1.to_sql}) as vfor ON #{Vote.table_name}.voteable_id = vfor.voteable_id) 
-	    AS joined_#{Vote.table_name} ON #{self.table_name}.#{self.primary_key} = 
-	      joined_#{Vote.table_name}.voteable_id")
+      	t = self.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Vote.table_name}.*, 
+      	  (COALESCE(vfor.Votes_For, 0)-COALESCE(against.Votes_Against, 0)) AS Vote_Total
+      	    FROM (#{Vote.table_name} LEFT JOIN
+      	      (#{tsub0.to_sql}) AS against ON #{Vote.table_name}.voteable_id = against.voteable_id)
+      	    LEFT JOIN 
+      	      (#{tsub1.to_sql}) as vfor ON #{Vote.table_name}.voteable_id = vfor.voteable_id) 
+      	    AS joined_#{Vote.table_name} ON #{self.table_name}.#{self.primary_key} = 
+      	      joined_#{Vote.table_name}.voteable_id")
 	
-	t = t.where("joined_#{Vote.table_name}.voteable_type = '#{self.name}'")
-	t = t.group("joined_#{Vote.table_name}.voteable_id, joined_#{Vote.table_name}.Vote_Total, #{column_names_for_tally}")
+      	t = t.where("joined_#{Vote.table_name}.voteable_type = '#{self.class.name}'")
+      	t = t.group("joined_#{Vote.table_name}.voteable_id, joined_#{Vote.table_name}.Vote_Total, #{column_names_for_tally}")
         t = t.limit(options[:limit]) if options[:limit]
         t = t.where("joined_#{Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
         t = t.where("joined_#{Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
         t = t.where(options[:conditions]) if options[:conditions]
         t = options[:ascending] ? t.order("joined_#{Vote.table_name}.Vote_Total") : t.order("joined_#{Vote.table_name}.Vote_Total DESC")
 			  
-        t = t.having(["COUNT(joined_#{Vote.table_name}.voteable_id) > 0",
-	        (options[:at_least] ? "joined_votes.Vote_Total >= #{sanitize(options[:at_least])}" : nil),
-		(options[:at_most] ? "joined_votes.Vote_Total <= #{sanitize(options[:at_most])}" : nil)
-		].compact.join(' AND '))
+			  if(options[:include_no_votes])
+			    t = t.having( options[:at_most] ? "joined_votes.Vote_Total <= #{sanitize(options[:at_most])}" : nil )
+			  else
+          t = t.having(["COUNT(joined_#{Vote.table_name}.voteable_id) > 0",
+      	                (options[:at_least] ? "joined_votes.Vote_Total >= #{sanitize(options[:at_least])}" : nil),
+      		              (options[:at_most] ? "joined_votes.Vote_Total <= #{sanitize(options[:at_most])}" : nil)
+      		             ].compact.join(' AND '))
+    		end
 	
-	t.select("#{self.table_name}.*, joined_#{Vote.table_name}.Vote_Total")
+      	t.select("#{self.table_name}.*, joined_#{Vote.table_name}.Vote_Total")
       end
 
       # Calculate the vote counts for all voteables of my type.
