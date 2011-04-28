@@ -15,7 +15,6 @@ module ThumbsUp
     end
 
     module SingletonMethods
-
     end
 
     module InstanceMethods
@@ -36,6 +35,10 @@ module ThumbsUp
 
       def votes_count
         votes_for_count + votes_against_count
+      end
+      
+      def is_cacheable?
+        true
       end
 
     end

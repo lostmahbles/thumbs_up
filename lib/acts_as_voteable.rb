@@ -151,6 +151,10 @@ module ThumbsUp
               :voter_id => voter.id
             ).count
       end
+      
+      def is_cacheable?
+        false
+      end
 
     end
   end

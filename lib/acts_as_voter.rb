@@ -84,6 +84,7 @@ module ThumbsUp #:nodoc:
         vote.voteable_type = voteable.class.name
         vote.voteable_id = voteable.to_param
         vote.save
+        voteable.reload if voteable.is_cacheable?
         #Vote.create!(:vote => direction, :voteable => voteable, :voter => self)
       end
 
