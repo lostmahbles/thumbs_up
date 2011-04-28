@@ -61,15 +61,11 @@ module ThumbsUp
         t = t.where(options[:conditions]) if options[:conditions]
         t = options[:ascending] ? t.order("joined_#{Vote.table_name}.Vote_Total") : t.order("joined_#{Vote.table_name}.Vote_Total DESC")
 			  
-			  if(options[:include_no_votes])
-			    t = t.having( options[:at_most] ? "joined_votes.Vote_Total <= #{sanitize(options[:at_most])}" : nil )
-			  else
-          t = t.having(["COUNT(joined_#{Vote.table_name}.voteable_id) > 0",
-      	                (options[:at_least] ? "joined_votes.Vote_Total >= #{sanitize(options[:at_least])}" : nil),
-      		              (options[:at_most] ? "joined_votes.Vote_Total <= #{sanitize(options[:at_most])}" : nil)
-      		             ].compact.join(' AND '))
-    		end
-	
+        t = t.having(["COUNT(joined_#{Vote.table_name}.voteable_id) > 0",
+      	              (options[:at_least] ? "joined_votes.Vote_Total >= #{sanitize(options[:at_least])}" : nil),
+    		              (options[:at_most] ? "joined_votes.Vote_Total <= #{sanitize(options[:at_most])}" : nil)
+    		             ].compact.join(' AND '))
+
       	t.select("#{self.table_name}.*, joined_#{Vote.table_name}.Vote_Total")
       end
 
