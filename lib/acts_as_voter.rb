@@ -32,7 +32,7 @@ module ThumbsUp #:nodoc:
       #       user.vote_count()      # All votes
 
       def vote_count(for_or_against = :all)
-        v = Vote.where(:voter_id => id).where(:voter_type => self.class.name)
+        v = Physical::Vote.where(:voter_id => id).where(:voter_type => self.class.name)
         v = case for_or_against
           when :all   then v
           when :up    then v.where(:vote => true)
@@ -50,7 +50,7 @@ module ThumbsUp #:nodoc:
       end
 
       def voted_on?(voteable)
-        0 < Vote.where(
+        0 < Physical::Vote.where(
               :voter_id => self.id,
               :voter_type => self.class.name,
               :voteable_id => voteable.id,
@@ -80,16 +80,16 @@ module ThumbsUp #:nodoc:
           self.clear_votes(voteable)
         end
         direction = (options[:direction].to_sym == :up)
-        vote = Vote.new(:vote => direction, :voter => self)
+        vote = Physical::Vote.new(:vote => direction, :voter => self)
         vote.voteable_type = voteable.class.name
         vote.voteable_id = voteable.to_param
         vote.save
         voteable.reload if voteable.is_cacheable?
-        #Vote.create!(:vote => direction, :voteable => voteable, :voter => self)
+        #Physical::Vote.create!(:vote => direction, :voteable => voteable, :voter => self)
       end
 
       def clear_votes(voteable)
-        Vote.where(
+        Physical::Vote.where(
           :voter_id => self.id,
           :voter_type => self.class.name,
           :voteable_id => voteable.id,
@@ -99,7 +99,7 @@ module ThumbsUp #:nodoc:
 
       def voted_which_way?(voteable, direction)
         raise ArgumentError, "expected :up or :down" unless [:up, :down].include?(direction)
-        0 < Vote.where(
+        0 < Physical::Vote.where(
               :voter_id => self.id,
               :voter_type => self.class.name,
               :vote => direction == :up ? true : false,

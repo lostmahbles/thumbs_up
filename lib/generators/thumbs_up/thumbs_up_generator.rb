@@ -23,7 +23,7 @@ class ThumbsUpGenerator < Rails::Generators::Base
   end
 
   def move_vote_model
-    template 'vote.rb', File.join('app', 'models', 'vote.rb')
+    template 'vote.rb', File.join('app', 'models', 'physical', 'vote.rb')
   end
 
 end

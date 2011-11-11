@@ -43,32 +43,32 @@ module ThumbsUp
         tsub1 = tsub1.group("voteable_id")
         tsub1 = tsub1.select("DISTINCT voteable_id, COUNT(vote) as votes_for")
 
-        t = self.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Vote.table_name}.*,
+        t = self.joins("LEFT OUTER JOIN (SELECT DISTINCT #{Physical::Vote.table_name}.*,
             (COALESCE(vfor.votes_for, 0)-COALESCE(against.votes_against, 0)) AS vote_total
-            FROM (#{Vote.table_name} LEFT JOIN
-            (#{tsub0.to_sql}) AS against ON #{Vote.table_name}.voteable_id = against.voteable_id)
+            FROM (#{Physical::Vote.table_name} LEFT JOIN
+            (#{tsub0.to_sql}) AS against ON #{Physical::Vote.table_name}.voteable_id = against.voteable_id)
             LEFT JOIN
-            (#{tsub1.to_sql}) as vfor ON #{Vote.table_name}.voteable_id = vfor.voteable_id)
-            AS joined_#{Vote.table_name} ON #{self.table_name}.#{self.primary_key} =
-            joined_#{Vote.table_name}.voteable_id")
+            (#{tsub1.to_sql}) as vfor ON #{Physical::Vote.table_name}.voteable_id = vfor.voteable_id)
+            AS joined_#{Physical::Vote.table_name} ON #{self.table_name}.#{self.primary_key} =
+            joined_#{Physical::Vote.table_name}.voteable_id")
 
-            t = t.where("joined_#{Vote.table_name}.voteable_type = '#{self.name}'")
-            t = t.group("joined_#{Vote.table_name}.voteable_id, joined_#{Vote.table_name}.vote_total, #{column_names_for_tally}")
-            t = t.where("joined_#{Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
-            t = t.where("joined_#{Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
-            t = options[:ascending] ? t.order("joined_#{Vote.table_name}.vote_total") : t.order("joined_#{Vote.table_name}.vote_total DESC")
+            t = t.where("joined_#{Physical::Vote.table_name}.voteable_type = '#{self.name}'")
+            t = t.group("joined_#{Physical::Vote.table_name}.voteable_id, joined_#{Physical::Vote.table_name}.vote_total, #{column_names_for_tally}")
+            t = t.where("joined_#{Physical::Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
+            t = t.where("joined_#{Physical::Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
+            t = options[:ascending] ? t.order("joined_#{Physical::Vote.table_name}.vote_total") : t.order("joined_#{Physical::Vote.table_name}.vote_total DESC")
 
             t = t.having([
-                  "COUNT(joined_#{Vote.table_name}.voteable_id) > 0",
+                  "COUNT(joined_#{Physical::Vote.table_name}.voteable_id) > 0",
                   (options[:at_least] ?
-                    "joined_#{Vote.table_name}.vote_total >= #{sanitize(options[:at_least])}" : nil
+                    "joined_#{Physical::Vote.table_name}.vote_total >= #{sanitize(options[:at_least])}" : nil
                   ),
                   (options[:at_most] ?
-                    "joined_#{Vote.table_name}.vote_total <= #{sanitize(options[:at_most])}" : nil
+                    "joined_#{Physical::Vote.table_name}.vote_total <= #{sanitize(options[:at_most])}" : nil
                   )
                 ].compact.join(' AND '))
 
-            t.select("#{self.table_name}.*, joined_#{Vote.table_name}.vote_total")
+            t.select("#{self.table_name}.*, joined_#{Physical::Vote.table_name}.vote_total")
       end
       
       # #rank_tally is depreciated.
@@ -90,17 +90,17 @@ module ThumbsUp
         options = args.extract_options!
 
         # Use the explicit SQL statement throughout for Postgresql compatibility.
-        vote_count = "COUNT(#{Vote.table_name}.voteable_id)"
+        vote_count = "COUNT(#{Physical::Vote.table_name}.voteable_id)"
         
-        t = self.where("#{Vote.table_name}.voteable_type = '#{self.name}'")
+        t = self.where("#{Physical::Vote.table_name}.voteable_type = '#{self.name}'")
 
         # We join so that you can order by columns on the voteable model.
-        t = t.joins("LEFT OUTER JOIN #{Vote.table_name} ON #{self.table_name}.#{self.primary_key} = #{Vote.table_name}.voteable_id")
+        t = t.joins("LEFT OUTER JOIN #{Physical::Vote.table_name} ON #{self.table_name}.#{self.primary_key} = #{Physical::Vote.table_name}.voteable_id")
 
-        t = t.group("#{Vote.table_name}.voteable_id, #{column_names_for_tally}")
+        t = t.group("#{Physical::Vote.table_name}.voteable_id, #{column_names_for_tally}")
         t = t.limit(options[:limit]) if options[:limit]
-        t = t.where("#{Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
-        t = t.where("#{Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
+        t = t.where("#{Physical::Vote.table_name}.created_at >= ?", options[:start_at]) if options[:start_at]
+        t = t.where("#{Physical::Vote.table_name}.created_at <= ?", options[:end_at]) if options[:end_at]
         t = t.where(options[:conditions]) if options[:conditions]
         t = options[:order] ? t.order(options[:order]) : t.order("#{vote_count} DESC")
 
@@ -115,7 +115,7 @@ module ThumbsUp
         # t = t.having("#{vote_count} > 0")
         # t = t.having(["#{vote_count} >= ?", options[:at_least]]) if options[:at_least]
         # t = t.having(["#{vote_count} <= ?", options[:at_most]]) if options[:at_most]
-        t.select("#{self.table_name}.*, COUNT(#{Vote.table_name}.voteable_id) AS vote_count")
+        t.select("#{self.table_name}.*, COUNT(#{Physical::Vote.table_name}.voteable_id) AS vote_count")
       end
 
       def column_names_for_tally
@@ -127,11 +127,11 @@ module ThumbsUp
     module InstanceMethods
 
       def votes_for
-        Vote.where(:voteable_id => id, :voteable_type => self.class.name, :vote => true).count
+        Physical::Vote.where(:voteable_id => id, :voteable_type => self.class.name, :vote => true).count
       end
 
       def votes_against
-        Vote.where(:voteable_id => id, :voteable_type => self.class.name, :vote => false).count
+        Physical::Vote.where(:voteable_id => id, :voteable_type => self.class.name, :vote => false).count
       end
 
       def percent_for
@@ -157,7 +157,7 @@ module ThumbsUp
       end
 
       def voted_by?(voter)
-        0 < Vote.where(
+        0 < Physical::Vote.where(
               :voteable_id => self.id,
               :voteable_type => self.class.name,
               :voter_type => voter.class.name,
